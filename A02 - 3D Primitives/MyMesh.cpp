@@ -1,4 +1,5 @@
 #include "MyMesh.h"
+#include <math.h>
 void MyMesh::Init(void)
 {
 	m_bBinded = false;
@@ -105,7 +106,7 @@ void MyMesh::CompileOpenGL3X(void)
 	glBindBuffer(GL_ARRAY_BUFFER, m_VBO);//Bind the VBO
 	glBufferData(GL_ARRAY_BUFFER, m_uVertexCount * 2 * sizeof(vector3), &m_lVertex[0], GL_STATIC_DRAW);//Generate space for the VBO
 
-	// Position attribute
+																									   // Position attribute
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 2 * sizeof(vector3), (GLvoid*)0);
 
@@ -121,7 +122,7 @@ void MyMesh::Render(matrix4 a_mProjection, matrix4 a_mView, matrix4 a_mModel)
 {
 	// Use the buffer and shader
 	GLuint nShader = m_pShaderMngr->GetShaderID("Basic");
-	glUseProgram(nShader); 
+	glUseProgram(nShader);
 
 	//Bind the VAO of this object
 	glBindVertexArray(m_VAO);
@@ -133,11 +134,11 @@ void MyMesh::Render(matrix4 a_mProjection, matrix4 a_mView, matrix4 a_mModel)
 	//Final Projection of the Camera
 	matrix4 m4MVP = a_mProjection * a_mView * a_mModel;
 	glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(m4MVP));
-	
+
 	//Solid
 	glUniform3f(wire, -1.0f, -1.0f, -1.0f);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glDrawArrays(GL_TRIANGLES, 0, m_uVertexCount);  
+	glDrawArrays(GL_TRIANGLES, 0, m_uVertexCount);
 
 	//Wire
 	glUniform3f(wire, 1.0f, 0.0f, 1.0f);
@@ -153,8 +154,8 @@ void MyMesh::AddTri(vector3 a_vBottomLeft, vector3 a_vBottomRight, vector3 a_vTo
 {
 	//C
 	//| \
-	//A--B
-	//This will make the triangle A->B->C 
+		//A--B
+//This will make the triangle A->B->C 
 	AddVertexPosition(a_vBottomLeft);
 	AddVertexPosition(a_vBottomRight);
 	AddVertexPosition(a_vTopLeft);
@@ -186,17 +187,17 @@ void MyMesh::GenerateCube(float a_fSize, vector3 a_v3Color)
 	//|  |
 	//0--1
 
-	vector3 point0(-fValue,-fValue, fValue); //0
-	vector3 point1( fValue,-fValue, fValue); //1
-	vector3 point2( fValue, fValue, fValue); //2
+	vector3 point0(-fValue, -fValue, fValue); //0
+	vector3 point1(fValue, -fValue, fValue); //1
+	vector3 point2(fValue, fValue, fValue); //2
 	vector3 point3(-fValue, fValue, fValue); //3
 
-	vector3 point4(-fValue,-fValue,-fValue); //4
-	vector3 point5( fValue,-fValue,-fValue); //5
-	vector3 point6( fValue, fValue,-fValue); //6
-	vector3 point7(-fValue, fValue,-fValue); //7
+	vector3 point4(-fValue, -fValue, -fValue); //4
+	vector3 point5(fValue, -fValue, -fValue); //5
+	vector3 point6(fValue, fValue, -fValue); //6
+	vector3 point7(-fValue, fValue, -fValue); //7
 
-	//F
+											  //F
 	AddQuad(point0, point1, point3, point2);
 
 	//B
@@ -237,7 +238,7 @@ void MyMesh::GenerateCuboid(vector3 a_v3Dimensions, vector3 a_v3Color)
 	vector3 point6(v3Value.x, v3Value.y, -v3Value.z); //6
 	vector3 point7(-v3Value.x, v3Value.y, -v3Value.z); //7
 
-	//F
+													   //F
 	AddQuad(point0, point1, point3, point2);
 
 	//B
@@ -275,8 +276,58 @@ void MyMesh::GenerateCone(float a_fRadius, float a_fHeight, int a_nSubdivisions,
 	Release();
 	Init();
 
+	vector3 topVec = vector3(0.0f, a_fHeight, 0.0f);
+	vector3 centerVec = vector3(0.0f, 0.0f, 0.0f);
+
+
+	//				Bottom left,				bottom right,			 top 
+	//AddTri(vector3(1.0f, 0.0f, 0.0f), vector3(-1.0f, 0.0f, 0.0f), vector3(0.0f, 0.0f, topPoint));
+
+
+	//C
+	//| \
+			//A--B
+//This will make the triangle A->B->C 
+
+
+
+	float currentX = a_fRadius;
+	float currentY = 0.0f;
+
+	float newX = 0.0f;
+	float newY = 0.0f;
+
+	float step = (PI * 2) / a_nSubdivisions;
+	//float step = 360 / a_nSubdivisions;
+	float currentAngle = step;
+
+	for (int i = 0; i < a_nSubdivisions; i++) {
+		//Calculate new points
+		newX = (float)cos(currentAngle);
+		newY = (float)sin(currentAngle);
+
+		//transform them to what will be our circle
+		newX = newX * a_fRadius;
+		newY = newY * a_fRadius;
+
+		//Base
+		AddTri(vector3(currentX, 0.0f, currentY), vector3(0.0f, 0.0f, 0.0f), vector3(newX, 0.0f, newY));
+		//Cone
+		AddTri(vector3(newX, 0.0f, newY), topVec, vector3(currentX, 0.0f, currentY));
+
+		//Assign new values for x/y positions
+		currentX = newX;
+		currentY = newY;
+
+		//iterate through step
+		currentAngle += step;
+	}
+
+
+
+
 	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
+	//GenerateCube(a_fRadius * 2.0f, a_v3Color);
 	// -------------------------------
 
 	// Adding information about color
@@ -299,9 +350,47 @@ void MyMesh::GenerateCylinder(float a_fRadius, float a_fHeight, int a_nSubdivisi
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	//C
+	//| \
+		//A--B
+//This will make the triangle A->B->C
+
+	float currentX = a_fRadius;
+	float currentY = 0.0f;
+
+	float newX = 0.0f;
+	float newY = 0.0f;
+
+	float step = (PI * 2) / a_nSubdivisions;
+	float currentAngle = step;
+
+	for (int i = 0; i < a_nSubdivisions; i++) {
+		//Calculate new points
+		newX = (float)cos(currentAngle);
+		newY = (float)sin(currentAngle);
+
+		//transform them to what will be our circle
+		newX = newX * a_fRadius;
+		newY = newY * a_fRadius;
+
+		//Base
+		AddTri(vector3(newX, 0.0f, newY), vector3(0.0f, 0.0f, 0.0f), vector3(currentX, 0.0f, currentY));
+		AddTri(vector3(currentX, a_fHeight, currentY), vector3(0.0f, a_fHeight, 0.0f), vector3(newX, a_fHeight, newY));
+
+
+		//Sides
+		AddTri(vector3(currentX, 0.0f, currentY), vector3(currentX, a_fHeight, currentY), vector3(newX, 0.0f, newY));
+		AddTri(vector3(newX, a_fHeight, newY), vector3(newX, 0.0, newY), vector3(currentX, a_fHeight, currentY));
+
+		//Assign new values for x/y positions
+		currentX = newX;
+		currentY = newY;
+
+		//iterate through step
+		currentAngle += step;
+	}
+
+
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
@@ -329,9 +418,66 @@ void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fH
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	//C
+	//| \
+		//A--B
+//This will make the triangle A->B->C
+
+	float currentOuterX = a_fOuterRadius;
+	float currentInnerX = a_fInnerRadius;
+
+	float currentOuterY = 0.0f;
+	float currentInnerY = 0.0f;
+
+	float newX = 0.0f;
+	float newY = 0.0f;
+
+	float newInnerX = 0.0f;
+	float newInnerY = 0.0f;
+
+	float step = (PI * 2) / a_nSubdivisions;
+	float currentAngle = step;
+
+	for (int i = 0; i < a_nSubdivisions; i++) {
+		//Calculate new points
+		newX = newInnerX = (float)cos(currentAngle);
+		newY = newInnerY = (float)sin(currentAngle);
+
+
+		//transform them to what will be our circles
+		newX = newX * a_fOuterRadius;
+		newY = newY * a_fOuterRadius;
+
+		newInnerX = newInnerX * a_fInnerRadius;
+		newInnerY = newInnerY * a_fInnerRadius;
+
+		//Bases
+		AddTri(vector3(newX, 0.0f, newY), vector3(currentInnerX, 0.0f, currentInnerY), vector3(currentOuterX, 0.0f, currentOuterY));
+		AddTri(vector3(currentInnerX, 0.0f, currentInnerY), vector3(newX, 0.0f, newY), vector3(newInnerX, 0.0f, newInnerY));
+
+		AddTri(vector3(currentOuterX, a_fHeight, currentOuterY), vector3(currentInnerX, a_fHeight, currentInnerY), vector3(newX, a_fHeight, newY));
+		AddTri(vector3(newInnerX, a_fHeight, newInnerY), vector3(newX, a_fHeight, newY), vector3(currentInnerX, a_fHeight, currentInnerY));
+
+
+		//Sides
+		AddTri(vector3(currentOuterX, 0.0f, currentOuterY), vector3(currentOuterX, a_fHeight, currentOuterY), vector3(newX, 0.0f, newY));
+		AddTri(vector3(newX, a_fHeight, newY), vector3(newX, 0.0, newY), vector3(currentOuterX, a_fHeight, currentOuterY));
+
+		AddTri(vector3(newInnerX, 0.0f, newInnerY), vector3(currentInnerX, a_fHeight, currentInnerY), vector3(currentInnerX, 0.0f, currentInnerY));
+		AddTri(vector3(currentInnerX, a_fHeight, currentInnerY), vector3(newInnerX, 0.0, newInnerY), vector3(newInnerX, a_fHeight, newInnerY));
+
+		//Assign new values for x/y positions
+		currentOuterX = newX;
+		currentOuterY = newY;
+
+		currentInnerX = newInnerX;
+		currentInnerY = newInnerY;
+
+		//iterate through step
+		currentAngle += step;
+	}
+
+
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
