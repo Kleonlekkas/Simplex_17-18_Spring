@@ -508,7 +508,8 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
+	//kind of a torus!
+	GenerateTube(0.5, 0.25f, 0.25f, 36, a_v3Color);
 	// -------------------------------
 
 	// Adding information about color
@@ -532,9 +533,109 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	//thought this would be ez pz. I could repeat what i did with the tube, just have the inner
+	//radius increase in height. The inner radius would be based on the subdivisions and be
+	//a ratio of the actual radius. Connect the triangles and voila, sphere.
+
+	float height = a_fRadius;
+
+	float currentX = a_fRadius;
+	float currentY = 0.0f;
+
+	float innerX = height * (a_nSubdivisions / 2);
+	float innerY = 0;
+
+	float newX = 0.0f;
+	float newY = 0.0f;
+
+	float newInnerX = 0.0f;
+	float newInnerY = 0.0f;
+
+	float step = (PI * 2) / a_nSubdivisions;
+	float currentAngle = step;
+
+	//Messed that up.
+	//float halfStep = (PI * 2) / (a_nSubdivisions / 2);
+	//float currentHalfAngle = halfStep; // what? lol
+
+	/*for (int i = 0; i < a_nSubdivisions / 2; i++) {
+
+		newInnerX = (float)cos(currentHalfAngle);
+		newInnerY = (float)sin(currentHalfAngle);
+
+		newInnerX = newInnerX * a_fRadius * (a_nSubdivisions / 2);
+		newInnerY = newInnerY * a_fRadius * (a_nSubdivisions / 2);
+
+		//Base
+		//Bottom
+		AddTri(vector3(newInnerX, 0.0f, newInnerY), vector3(0.0f, -height, 0.0f), vector3(innerX, 0.0f, innerY));
+
+		//Top
+		AddTri(vector3(innerX, 0.0f, innerY), vector3(0.0f, height, 0.0f), vector3(newInnerX, 0.0f, newInnerY));
+
+		//Assign new values for x/y positions
+		innerX = newInnerX;
+		innerY = newInnerY;
+
+		//iterate through step
+		currentHalfAngle += halfStep;
+	}*/
+
+	float ratio = 0.0f;
+
+	//for (int n = 1; n < a_nSubdivisions; n++) {
+
+		for (int i = 0; i < a_nSubdivisions; i++) {
+			//Calculate new points
+			newInnerX = newX = (float)cos(currentAngle);
+			newInnerY = newY = (float)sin(currentAngle);
+
+			newInnerX = newInnerX * (a_fRadius * (a_nSubdivisions / 2));
+			newInnerY = newInnerY * (a_fRadius * (a_nSubdivisions / 2));
+
+			//transform them to what will be our circle
+			newX = newX * a_fRadius;
+			newY = newY * a_fRadius;
+
+			//newInnerX = (currentX + newX) / 2;
+			//newInnerY = (currentY + newY) / 2;
+
+			//I couldn't make a sphere, so I made beyblade
+			//
+			// X		XXXXXX XXXXXXX		X	XXXXXXXXX		XXXXX	  X		XXXXXX
+			// X		X		  X			X		X			X	  X	  X		X	 X
+			// X		XXX		  X			X		X			X	X	  X		X	 X
+			// X		X		  X			X		X			XXX		  X		XXXXXX
+			// X		X		  X			X		X			X	X	  X		X
+			// XXXXXXX  XXXXXX	  X			X		X			X	  X	  X		X
+			//								(my grade)
+			//Bottom
+			AddTri(vector3(newX, 0.0f, newY), vector3(newInnerX, -height/2, newInnerY), vector3(currentX, 0.0f, currentY));
+			AddTri(vector3(currentX, 0.0f, currentY), vector3(newInnerX, -height, newInnerY), vector3(newX, 0.0f, newY));
+			AddTri(vector3(newX, 0.0f, newY), vector3(0.0f, -height, 0.0f), vector3(currentX, 0.0f, currentY));
+
+			//Top
+			AddTri(vector3(currentX, 0.0f, currentY), vector3(newInnerX, height/2, newInnerY), vector3(newX, 0.0f, newY));
+			AddTri(vector3(newX, 0.0f, newY), vector3(newInnerX, height, newInnerY), vector3(currentX, 0.0f, currentY));
+			AddTri(vector3(currentX, 0.0f, currentY), vector3(0.0f, height, 0.0f), vector3(newX, 0.0f, newY));
+
+
+			//Assign new values for x/y positions
+			currentX = newX;
+			currentY = newY;
+
+			innerX = newInnerX;
+			innerY = newInnerY;
+
+			//iterate through step
+			currentAngle += step;
+		}
+
+	//}
+	
+	
+
+	
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
