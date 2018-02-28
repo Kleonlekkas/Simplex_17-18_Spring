@@ -2,7 +2,7 @@
 void Application::InitVariables(void)
 {
 	//Change this to your name and email
-	m_sProgrammer = "Alberto Bobadilla - labigm@rit.edu";
+	m_sProgrammer = "Kyle Lekkas - knl1637@g.rit.edu";
 	
 	//Set the position and target of the camera
 	//(I'm at [0,0,10], looking at [0,0,0] and up is the positive Y axis)
@@ -22,7 +22,13 @@ void Application::InitVariables(void)
 	if(m_uOrbits < 1)
 		m_uOrbits = 7;
 
+	//initialize our routes with 0s, up to the amount of orbits we have
+	for (int i = 0; i < m_uOrbits; i++) {
+		routes.push_back(0);
+	}
+
 	float fSize = 1.0f; //initial size of orbits
+	float fRadius = 0.95f; //IMPORTANT CODE
 
 	//creating a color using the spectrum 
 	uint uColor = 650; //650 is Red
@@ -36,6 +42,48 @@ void Application::InitVariables(void)
 	{
 		vector3 v3Color = WaveLengthToRGB(uColor); //calculate color based on wavelength
 		m_shapeList.push_back(m_pMeshMngr->GenerateTorus(fSize, fSize - 0.1f, 3, i, v3Color)); //generate a custom torus and add it to the meshmanager
+		std::vector<vector3>stopList;
+
+		//Calculate points to add to stopList -------------------------
+		float currentX = fSize;
+		float currentY = 0.0f;
+
+		float newX = 0.0f;
+		float newY = 0.0f;
+
+		float step = (PI * 2) / i;
+		float currentAngle = step;
+
+		stopList.push_back(vector3(currentX, currentY, 0.0f));
+		//std::cout << "Orbit: " << i << " Point: " << 1 << "X: " << currentX << " Y: " << currentY << std::endl;
+		//Loop i times where i is the amount of sides
+		for (int n = 0; n < i - 1; n++) {
+			//Calculate new points
+			newX = (float)cos(currentAngle);
+			newY = (float)sin(currentAngle);
+
+			//transform them to what will be our circle
+			newX = newX * fSize;
+			newY = newY * fSize;
+
+			//push in the new points
+			stopList.push_back(vector3(newX, newY, 0.0f));
+
+			//std::cout << "Orbit: " << i << " Point: " << n << "X: " << newX << " Y: " << newY <<std::endl;
+
+			//Assign new values for x/y positions
+			currentX = newX;
+			currentY = newY;
+
+			//iterate through step
+			currentAngle += step;
+		}
+		//end calculating of points ----------------------------------
+
+		vectorOfVectors.push_back(stopList);
+
+		//std::cout << "stoplist " << i << std::endl;
+
 		fSize += 0.5f; //increment the size for the next orbit
 		uColor -= static_cast<uint>(decrements); //decrease the wavelength
 	}
@@ -64,18 +112,68 @@ void Application::Display(void)
 	*/
 	//m4Offset = glm::rotate(IDENTITY_M4, 90.0f, AXIS_Z);
 
-	// draw a shapes
-	for (uint i = 0; i < m_uOrbits; ++i)
-	{
-		m_pMeshMngr->AddMeshToRenderList(m_shapeList[i], glm::rotate(m4Offset, 90.0f, AXIS_X));
+	//------------------------LERP---------------------------
+	//Get a timer
+	static float fTimer = 0;	//store the new timer
+	static uint uClock = m_pSystem->GenClock(); //generate a new clock for that timer
+	fTimer += m_pSystem->GetDeltaTime(uClock); //get the delta time for that timer
+
+	//get the percentage
+	float fTimeBetweenStops = 1.0;//in seconds
+	
+								  //map the value to be between 0.0 and 1.0
+	float fPercentage = MapValue(fTimer, 0.0f, fTimeBetweenStops, 0.0f, 1.0f);
+
+	for (int p = 0; p < vectorOfVectors.size(); p++) {
+
+
+		vector3 v3Start; //start point
+		vector3 v3End; //end point
+		vector3 v3CurrentPos;
+
+		//vectorOfVectors holds vectors of the stored points.
+		v3Start = vectorOfVectors[p][routes[p]]; //start at the current route
+		v3End = vectorOfVectors[p][(routes[p] + 1) % vectorOfVectors[p].size()]; //end at route +1 (if overboard will restart from 0)
+
+
+		
 
 		//calculate the current position
-		vector3 v3CurrentPos = ZERO_V3;
-		matrix4 m4Model = glm::translate(m4Offset, v3CurrentPos);
+		v3CurrentPos = glm::lerp(v3Start, v3End, fPercentage);
 
-		//draw spheres
-		m_pMeshMngr->AddSphereToRenderList(m4Model * glm::scale(vector3(0.1)), C_WHITE);
+		
+		
+		//if we are done with this route
+		if (fPercentage >= 1.0f)
+		{
+			routes[p]++; //go to the next route
+			fTimer = m_pSystem->GetDeltaTime(uClock);//restart the clock
+			routes[p] %= vectorOfVectors[p].size();//make sure we are within boundaries
+		}
+
+
+
+		// draw a shapes
+		for (uint i = 0; i < m_uOrbits; ++i)
+		{
+			m_pMeshMngr->AddMeshToRenderList(m_shapeList[i], glm::rotate(m4Offset, 90.0f, AXIS_X));
+
+			//calculate the current position
+			//vector3 v3CurrentPos = ZERO_V3;
+
+			//std::cout << p << std::endl;
+
+
+			matrix4 m4Model = glm::translate(m4Offset, v3CurrentPos);
+
+
+
+			//draw spheres
+			m_pMeshMngr->AddSphereToRenderList(m4Model * glm::scale(vector3(0.1)), C_WHITE);
+		}
 	}
+
+	
 
 	//render list call
 	m_uRenderCallCount = m_pMeshMngr->Render();
@@ -94,3 +192,4 @@ void Application::Release(void)
 	//release GUI
 	ShutdownGUI();
 }
+
