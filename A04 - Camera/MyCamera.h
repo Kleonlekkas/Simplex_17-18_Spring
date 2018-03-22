@@ -29,6 +29,20 @@ class MyCamera
 	matrix4 m_m4View; //View matrix
 	matrix4 m_m4Projection; //Projection Matrix
 public:
+
+	//getting the cameras position
+	vector3 returnPosition();
+
+	//coords to keep track of right vector
+	float rightRotX = 15.0f;
+	float rightRotY = 0.0f;
+	float rightRotZ = 0.0f;
+
+	//coords to keep track of forward vector
+	float rotX = 0.0f;
+	float rotY = 0.0f;
+	float rotZ = 0.0f;
+
 	/*
 	USAGE: Constructor
 	ARGUMENTS: ---

@@ -16,6 +16,9 @@ void Application::InitVariables(void)
 			vector3(0.0f, 3.0f, 19.0f), //where what I'm looking at is
 			AXIS_Y);					//what is up
 
+	//Have to set this again here since it does not initialize properly
+	m_pCamera->rightRotX = 15.0;
+
 	//Get the singleton
 	m_pMyMeshMngr = MyMeshManager::GetInstance();
 	m_pMyMeshMngr->SetCamera(m_pCamera);

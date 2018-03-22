@@ -347,32 +347,61 @@ void Application::CameraRotation(float a_fSpeed)
 	float fAngleX = 0.0f;
 	float fAngleY = 0.0f;
 	float fDeltaMouse = 0.0f;
+
+	//-----------------------------------------------------------------------------------------------ROTATION
 	if (MouseX < CenterX)
 	{
 		fDeltaMouse = static_cast<float>(CenterX - MouseX);
 		fAngleY += fDeltaMouse * a_fSpeed;
+		//m_pCamera->SetTarget(m_pCamera->returnPosition() + vector3(0.0f, 0.0f, 0.2f));
+		//m_pCamera->offset += new vector3(0.0f, 0.0f, 0.5f);
+		m_pCamera->rotX -= 0.05f;
+		m_pCamera->rotZ += 0.05f;
+
+		m_pCamera->rightRotX -= 0.05f;
+		m_pCamera->rightRotZ += 0.05f;
 	}
 	else if (MouseX > CenterX)
 	{
 		fDeltaMouse = static_cast<float>(MouseX - CenterX);
 		fAngleY -= fDeltaMouse * a_fSpeed;
+		//m_pCamera->SetTarget(m_pCamera->returnPosition() + vector3(0.0f, 0.0f, -0.2f));
+		//m_pCamera->offset += new vector3(0.0f, 0.0f, -0.5f);
+		m_pCamera->rotX += 0.05f;
+		m_pCamera->rotZ -= 0.05f;
+
+		m_pCamera->rightRotX += 0.05f;
+		m_pCamera->rightRotZ -= 0.05f;
 	}
 
 	if (MouseY < CenterY)
 	{
 		fDeltaMouse = static_cast<float>(CenterY - MouseY);
 		fAngleX -= fDeltaMouse * a_fSpeed;
+		//m_pCamera->offset += new vector3(-0.5f, 0.0f, 0.0f);
+		m_pCamera->rotY += 0.05f;
+		m_pCamera->rotZ += 0.05f;
+
+		m_pCamera->rightRotY += 0.05f;
+		m_pCamera->rightRotZ += 0.05f;		
 	}
 	else if (MouseY > CenterY)
 	{
 		fDeltaMouse = static_cast<float>(MouseY - CenterY);
 		fAngleX += fDeltaMouse * a_fSpeed;
+		//m_pCamera->SetTarget(m_pCamera->returnPosition() + vector3(0.2f, 0.0f, 0.0f));
+		//m_pCamera->offset += new vector3(0.5f, 0.0f, 0.0f);
+		m_pCamera->rotY -= 0.05f;
+		m_pCamera->rotZ -= 0.05f;
+
+		m_pCamera->rightRotY -= 0.05f;
+		m_pCamera->rightRotZ -= 0.05f;
 	}
 	//Change the Yaw and the Pitch of the camera
 	SetCursorPos(CenterX, CenterY);//Position the mouse in the center
 }
 //Keyboard
-void Application::ProcessKeyboard(void)
+void Application::ProcessKeyboard(void)  //------------------------------------------------------------------------------------MOVEMENT
 {
 	/*
 	This is used for things that are continuously happening,
@@ -385,6 +414,45 @@ void Application::ProcessKeyboard(void)
 
 	if (fMultiplier)
 		fSpeed *= 5.0f;
+
+	//Distance from camera to target
+	float dist = 15;
+
+	//Get current position to add to speed
+	vector3 currentPos = m_pCamera->returnPosition();
+	vector3 targetVector = currentPos + vector3(cos(m_pCamera->rotX) * dist, sin(m_pCamera->rotY) * dist, sin(m_pCamera->rotZ) * dist);
+
+	vector3 rightVector = currentPos + vector3(cos(m_pCamera->rightRotX) * dist, sin(m_pCamera->rightRotY) * dist, sin(m_pCamera->rightRotZ) * dist);
+
+	//Get normalized vector from target and current position, so we can move in the direction of the target
+	vector3 normVec = glm::normalize(targetVector - currentPos);
+	vector3 normRightVec = glm::normalize(targetVector - rightVector);
+
+	//float magnitude = sqrt((normVec.x * normVec.x) + (normVec.y * normVec.y) + (normVec.z * normVec.z));
+	//normVec = vector3(normVec.x / magnitude, normVec.y / magnitude, normVec.z / magnitude);
+
+	//key inputs
+	//forward
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+		m_pCamera->SetPosition(currentPos + (normVec * fSpeed));
+		m_pCamera->SetTarget(targetVector);
+
+	//backward
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+		m_pCamera->SetPosition(currentPos + (normVec * -fSpeed));
+
+	//Close to getting sideways movement working properly, but in order to get the initial 30%, going to use improper left and right movement
+	//left
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+		//m_pCamera->SetPosition(currentPos + (normRightVec * -fSpeed));
+		m_pCamera->SetPosition(currentPos + vector3(0.0f, 0.0f, -fSpeed));
+
+	//right
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+		//m_pCamera->SetPosition(currentPos + (normRightVec * fSpeed));
+		m_pCamera->SetPosition(currentPos + vector3(0.0f, 0.0f, fSpeed));
+
+	m_pCamera->SetUp(AXIS_Y);
 #pragma endregion
 }
 //Joystick
