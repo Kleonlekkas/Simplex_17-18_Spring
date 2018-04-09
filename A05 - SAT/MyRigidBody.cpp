@@ -224,7 +224,7 @@ void MyRigidBody::ClearCollidingList(void)
 {
 	m_CollidingRBSet.clear();
 }
-bool MyRigidBody::IsColliding(MyRigidBody* const a_pOther)
+bool MyRigidBody::IsColliding(MyRigidBody* const a_pOther)  //-------------------------------------------------------------------------------
 {
 	//check if spheres are colliding as pre-test
 	bool bColliding = (glm::distance(GetCenterGlobal(), a_pOther->GetCenterGlobal()) < m_fRadius + a_pOther->m_fRadius);
@@ -232,8 +232,10 @@ bool MyRigidBody::IsColliding(MyRigidBody* const a_pOther)
 	//if they are colliding check the SAT
 	if (bColliding)
 	{
-		if(SAT(a_pOther) != eSATResults::SAT_NONE)
+		if (SAT(a_pOther) != eSATResults::SAT_NONE) {
 			bColliding = false;// reset to false
+		}
+
 	}
 
 	if (bColliding) //they are colliding
@@ -274,11 +276,128 @@ void MyRigidBody::AddToRenderList(void)
 	}
 }
 
+// Region R = { x | x = c+r*u[0]+s*u[1]+t*u[2] }, |r|<=e[0], |s|<=e[1], |t|<=e[2] makes sense to me
+
 uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 {
-	/*
-	Your code goes here instead of this comment;
+	
+	//declare and init our Oritented Bounding Box properties                                       
+	vector3 thisCenter = this->GetCenterGlobal(); //OBB Center point                               
+	float thisHW[3]; //Positive halfwidth extents of OBB along each axis     
+	vector3 thisAxes[3]; //Local x-, y-, and z- axes
 
+	vector3 otherCenter = a_pOther->GetCenterGlobal();
+	float otherHW[3];
+	vector3 otherAxes[3];
+
+	//Set halfwidths for each axis
+	thisHW[0] = (m_v3MaxL.x - m_v3MinL.x) / 2;
+	thisHW[1] = (m_v3MaxL.y - m_v3MinL.y) / 2;
+	thisHW[2] = (m_v3MaxL.z - m_v3MinL.z) / 2;
+
+	//And for other object
+	otherHW[0] = (a_pOther->m_v3MaxL.x - a_pOther->m_v3MinL.x) / 2;
+	otherHW[1] = (a_pOther->m_v3MaxL.y - a_pOther->m_v3MinL.y) / 2;
+	otherHW[2] = (a_pOther->m_v3MaxL.z - a_pOther->m_v3MinL.z) / 2;
+
+	//Get axis orientation of each axis
+	thisAxes[0] = vector3(this->GetModelMatrix()[0][0], this->GetModelMatrix()[0][1], this->GetModelMatrix()[0][2]);
+	thisAxes[1] = vector3(this->GetModelMatrix()[1][0], this->GetModelMatrix()[1][1], this->GetModelMatrix()[1][2]);
+	thisAxes[2] = vector3(this->GetModelMatrix()[2][0], this->GetModelMatrix()[2][1], this->GetModelMatrix()[2][2]);
+
+	//and other
+	otherAxes[0] = vector3(a_pOther->GetModelMatrix()[0][0], a_pOther->GetModelMatrix()[0][1], a_pOther->GetModelMatrix()[0][2]);
+	otherAxes[1] = vector3(a_pOther->GetModelMatrix()[1][0], a_pOther->GetModelMatrix()[1][1], a_pOther->GetModelMatrix()[1][2]);
+	otherAxes[2] = vector3(a_pOther->GetModelMatrix()[2][0], a_pOther->GetModelMatrix()[2][1], a_pOther->GetModelMatrix()[2][2]);
+
+
+	float ra, rb;
+	matrix3 R, AbsR;
+
+	//Compite rotation matrix expressin the other rigidbody in this rbs coordinate frame
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			R[i][j] = glm::dot(otherAxes[i], thisAxes[j]);
+		}
+	}
+	 
+	//Compute translation vector t
+	vector3 t = thisCenter - otherCenter;
+	//Bring translation into this objects coordinate frame
+	t = vector3(glm::dot(t, otherAxes[0]), glm::dot(t, otherAxes[1]), glm::dot(t, otherAxes[2]));
+
+	//Compute common subexpressions
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			AbsR[i][j] = abs(R[i][j]); //sans epislon
+		}
+	}
+
+	// Test axes L = A0, L = A1, L = A2
+	for (int i = 0; i < 3; i++) {
+		ra = thisHW[i];
+		rb = otherHW[0] * AbsR[i][0] + otherHW[1] * AbsR[i][1] + otherHW[2] * AbsR[i][2];
+		if (abs(t[i]) > ra + rb) return 1;
+	}
+
+	// Test axes L = B0, L = B1, L = B2
+	for (int i = 0; i < 3; i++) {
+		ra = thisHW[0] * AbsR[0][i] + thisHW[1] * AbsR[1][i] + thisHW[2] * AbsR[2][i];
+		rb = otherHW[i];
+		if (abs(t[0] * R[0][i] + t[1] * R[1][i] + t[2] * R[2][i]) > ra + rb) return 1;
+	}
+
+	// Test axis L = A0 x B0
+	ra = thisHW[1] * AbsR[2][0] + thisHW[2] * AbsR[1][0];
+	rb = otherHW[1] * AbsR[0][2] + otherHW[2] * AbsR[0][1];
+	if (abs(t[2] * R[1][0] - t[1] * R[2][0]) > ra + rb) {
+		return 1;
+	}
+
+	// Test axis L = A0 x B1
+	ra = thisHW[1] * AbsR[2][1] + thisHW[2] * AbsR[1][1];
+	rb = otherHW[0] * AbsR[0][2] + otherHW[2] * AbsR[0][0];
+	if (abs(t[2] * R[1][1] - t[1] * R[2][1]) > ra + rb) return 1;
+
+	// Test axis L = A0 x B2
+	ra = thisHW[1] * AbsR[2][2] + thisHW[2] * AbsR[1][2];
+	rb = otherHW[0] * AbsR[0][1] + otherHW[1] * AbsR[0][0];
+	if (abs(t[2] * R[1][2] - t[1] * R[2][2]) > ra + rb) return 1;
+
+	// Test axis L = A1 x B0
+	ra = thisHW[0] * AbsR[2][0] + thisHW[2] * AbsR[0][0];
+	rb = otherHW[1] * AbsR[1][2] + otherHW[2] * AbsR[1][1];
+
+	if (abs(t[0] * R[2][0] - t[2] * R[0][0]) > ra + rb) return 1;
+
+	// Test axis L = A1 x B1
+	ra = thisHW[0] * AbsR[2][1] + thisHW[2] * AbsR[0][1];
+	rb = otherHW[0] * AbsR[1][2] + otherHW[2] * AbsR[1][0];
+	if (abs(t[0] * R[2][1] - t[2] * R[0][1]) > ra + rb) return 1;
+
+	// Test axis L = A1 x B2
+	ra = thisHW[0] * AbsR[2][2] + thisHW[2] * AbsR[0][2];
+	rb = otherHW[0] * AbsR[1][1] + otherHW[1] * AbsR[1][0];
+	if (abs(t[0] * R[2][2] - t[2] * R[0][2]) > ra + rb) return 1;
+
+	// Test axis L = A2 x B0
+	ra = thisHW[0] * AbsR[1][0] + thisHW[1] * AbsR[0][0];
+	rb = otherHW[1] * AbsR[2][2] + otherHW[2] * AbsR[2][1];
+	if (abs(t[1] * R[0][0] - t[0] * R[1][0]) > ra + rb) return 1;
+
+	// Test axis L = A2 x B1
+	ra = thisHW[0] * AbsR[1][1] + thisHW[1] * AbsR[0][1];
+	rb = otherHW[0] * AbsR[2][2] + otherHW[2] * AbsR[2][0];
+	if (abs(t[1] * R[0][1] - t[0] * R[1][1]) > ra + rb) return 1;
+
+	// Test axis L = A2 x B2
+	ra = thisHW[0] * AbsR[1][2] + thisHW[1] * AbsR[0][2];
+	rb = otherHW[0] * AbsR[2][1] + otherHW[1] * AbsR[2][0];
+	if (abs(t[1] * R[0][2] - t[0] * R[1][2]) > ra + rb) return 1;
+
+
+
+	/*
 	For this method, if there is an axis that separates the two objects
 	then the return will be different than 0; 1 for any separating axis
 	is ok if you are not going for the extra credit, if you could not
@@ -290,3 +409,4 @@ uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 	//there is no axis test that separates this two objects
 	return eSATResults::SAT_NONE;
 }
+
