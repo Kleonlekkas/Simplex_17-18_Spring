@@ -18,6 +18,16 @@ void Application::InitVariables(void)
 	int nSquare = static_cast<int>(std::sqrt(uInstances));
 	m_uObjects = nSquare * nSquare;
 	uint uIndex = -1;
+
+	//figure out min and maxes of each circle
+
+
+	float minX;
+	float minY;
+	float maxX;
+	float maxY;
+
+
 	for (int i = 0; i < nSquare; i++)
 	{
 		for (int j = 0; j < nSquare; j++)
