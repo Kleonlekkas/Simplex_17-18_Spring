@@ -19,14 +19,6 @@ void Application::InitVariables(void)
 	m_uObjects = nSquare * nSquare;
 	uint uIndex = -1;
 
-	//figure out min and maxes of each circle
-
-
-	float minX;
-	float minY;
-	float maxX;
-	float maxY;
-
 
 	for (int i = 0; i < nSquare; i++)
 	{
@@ -40,6 +32,7 @@ void Application::InitVariables(void)
 		}
 	}
 	m_uOctantLevels = 1;
+	m_pRoot = new MyOctant(m_uOctantLevels, 5);
 	m_pEntityMngr->Update();
 }
 void Application::Update(void)
@@ -64,8 +57,13 @@ void Application::Display(void)
 	// Clear the screen
 	ClearScreen();
 
+	//m_pMeshMngr->AddWireCubeToRenderList(IDENTITY_M4, C_YELLOW, RENDER_WIRE);
+
 	//display octree
-	//m_pRoot->Display();
+	if (showSO) {
+		m_pRoot->Display();
+	}
+
 	
 	// draw a skybox
 	m_pMeshMngr->AddSkyboxToRenderList();

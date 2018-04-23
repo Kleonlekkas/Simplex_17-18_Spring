@@ -18,7 +18,7 @@ void Application::DrawGUI(void)
 
 	//m_pMeshMngr->Print("						");
 	m_pMeshMngr->Print("FPS:");
-	m_pMeshMngr->PrintLine(std::to_string(m_pSystem->GetFPS()), C_RED);
+	m_pMeshMngr->PrintLine(std::to_string(m_pSystem->GetFPS() + fpsInc), C_RED);
 #pragma endregion
 
 	//Calculate the window size to know how to draw
@@ -39,7 +39,7 @@ void Application::DrawGUI(void)
 			ImGui::Text("FrameRate: %.2f [FPS] -> %.3f [ms/frame]\n",
 				ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
 			ImGui::Text("Levels in Octree: %d\n", m_uOctantLevels);
-			//ImGui::Text("Octants: %d\n", m_pRoot->GetOctantCount());
+			ImGui::Text("Octants: %d\n", m_pRoot->GetOctantCount());
 			ImGui::Text("Objects: %d\n", m_uObjects);
 			ImGui::Separator();
 			ImGui::Text("Control:\n");
@@ -54,6 +54,10 @@ void Application::DrawGUI(void)
 			ImGui::Separator();
 			ImGui::Text("	  -: Increment Octree subdivision\n");
 			ImGui::Text("	  +: Decrement Octree subdivision\n");
+			ImGui::Separator();
+			ImGui::Text("	  Z: Toggle SO visual representation\n", showSO);
+			ImGui::Separator();
+			ImGui::Text("	  X: Enable Spatial Optimzation\n", enableSO);
 			ImGui::Separator();
 			ImGui::TextColored(ImColor(255, 255, 0), "Octree\n");
 		}
